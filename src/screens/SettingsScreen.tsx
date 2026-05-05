@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -7,127 +7,260 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useColorScheme,
+  Pressable,
 } from 'react-native';
-import {PluginManager} from 'sn-plugin-lib';
-import {useSettings} from '../hooks/useSettings';
-import {Settings} from '../types';
+import { PluginCommAPI } from 'sn-plugin-lib';
+import { Settings, Template } from '../types';
 
 const DATE_FORMATS = ['YYYY-MM-DD', 'DD-MM-YYYY', 'MM-DD-YYYY', 'YYYYMMDD'];
 
-export default function SettingsScreen() {
-  const {settings, templates, loading, save} = useSettings();
-  const [draft, setDraft] = useState<Settings | null>(null);
-  const current = draft ?? settings;
+interface SettingsScreenProps {
+  initialSettings: Settings;
+  onSave: (settings: Settings) => Promise<void>;
+  onBack: () => void;
+}
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#333" />
-      </View>
-    );
-  }
+export default function SettingsScreen({
+  initialSettings,
+  onSave,
+  onBack,
+}: SettingsScreenProps) {
+  const isDarkMode = useColorScheme() === 'dark';
+  const [loading, setLoading] = useState(false);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [draft, setDraft] = useState<Settings>(initialSettings);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
-  async function handleSave() {
-    await save(current);
-    PluginManager.closePluginView();
-  }
+  // Load templates on mount
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        const result = await PluginCommAPI.getNoteSystemTemplates();
+        if (result && Array.isArray(result)) {
+          setTemplates(result);
+        }
+      } catch (err) {
+        console.error('Failed to load templates:', err);
+      }
+    };
+    loadTemplates();
+  }, []);
+
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      await onSave(draft);
+      setSaveMessage('Settings saved!');
+      setTimeout(() => {
+        setSaveMessage(null);
+        onBack();
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+      setSaveMessage('Failed to save');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const bgColor = isDarkMode ? '#1a1a1a' : '#ffffff';
+  const textColor = isDarkMode ? '#ffffff' : '#111111';
+  const labelColor = isDarkMode ? '#cccccc' : '#555555';
+  const inputBgColor = isDarkMode ? '#2a2a2a' : '#fafafa';
+  const inputBorderColor = isDarkMode ? '#444444' : '#d0d0d0';
+  const buttonBgColor = isDarkMode ? '#333333' : '#222222';
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Daily Notes</Text>
+    <ScrollView
+      contentContainerStyle={[styles.container, { backgroundColor: bgColor, paddingTop: 60 }]}
+    >
+      <View style={styles.header}>
+        <Pressable onPress={onBack}>
+          <Text style={[styles.backButton, { color: textColor }]}>← Back</Text>
+        </Pressable>
+        <Text style={[styles.title, { color: textColor }]}>Settings</Text>
+      </View>
 
-      <Text style={styles.label}>Folder</Text>
+      <Text style={[styles.label, { color: labelColor }]}>Folder Name</Text>
       <TextInput
-        style={styles.input}
-        value={current.folder}
-        onChangeText={v => setDraft({...current, folder: v})}
+        style={[styles.input, { backgroundColor: inputBgColor, borderColor: inputBorderColor, color: textColor }]}
+        value={draft.folder}
+        onChangeText={(v) => setDraft({ ...draft, folder: v })}
         placeholder="Daily Notes"
-        autoCapitalize="none"
+        placeholderTextColor={labelColor}
+        autoCapitalize="words"
         autoCorrect={false}
+        editable={!loading}
       />
 
-      <Text style={styles.label}>Date Format</Text>
+      <Text style={[styles.label, { color: labelColor }]}>Date Format</Text>
       <View style={styles.chipRow}>
-        {DATE_FORMATS.map(fmt => (
+        {DATE_FORMATS.map((fmt) => (
           <TouchableOpacity
             key={fmt}
-            style={[styles.chip, current.dateFormat === fmt && styles.chipActive]}
-            onPress={() => setDraft({...current, dateFormat: fmt})}>
+            style={[
+              styles.chip,
+              {
+                borderColor: draft.dateFormat === fmt ? buttonBgColor : inputBorderColor,
+                backgroundColor: draft.dateFormat === fmt ? buttonBgColor : inputBgColor,
+              },
+            ]}
+            onPress={() => setDraft({ ...draft, dateFormat: fmt })}
+            disabled={loading}
+          >
             <Text
-              style={[styles.chipText, current.dateFormat === fmt && styles.chipTextActive]}>
+              style={[
+                styles.chipText,
+                {
+                  color: draft.dateFormat === fmt ? '#ffffff' : labelColor,
+                },
+              ]}
+            >
               {fmt}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <Text style={styles.label}>Template</Text>
+      <Text style={[styles.label, { color: labelColor }]}>Template</Text>
       <View style={styles.chipRow}>
         <TouchableOpacity
-          style={[styles.chip, !current.templatePath && styles.chipActive]}
-          onPress={() => setDraft({...current, templatePath: '', templateName: ''})}>
-          <Text style={[styles.chipText, !current.templatePath && styles.chipTextActive]}>
+          style={[
+            styles.chip,
+            {
+              borderColor: !draft.templatePath ? buttonBgColor : inputBorderColor,
+              backgroundColor: !draft.templatePath ? buttonBgColor : inputBgColor,
+            },
+          ]}
+          onPress={() => setDraft({ ...draft, templatePath: '', templateName: '' })}
+          disabled={loading}
+        >
+          <Text
+            style={[
+              styles.chipText,
+              {
+                color: !draft.templatePath ? '#ffffff' : labelColor,
+              },
+            ]}
+          >
             None
           </Text>
         </TouchableOpacity>
-        {templates.map(tpl => (
+        {templates.map((tpl) => (
           <TouchableOpacity
             key={tpl.vUri}
-            style={[styles.chip, current.templatePath === tpl.vUri && styles.chipActive]}
+            style={[
+              styles.chip,
+              {
+                borderColor: draft.templatePath === tpl.vUri ? buttonBgColor : inputBorderColor,
+                backgroundColor: draft.templatePath === tpl.vUri ? buttonBgColor : inputBgColor,
+              },
+            ]}
             onPress={() =>
-              setDraft({...current, templatePath: tpl.vUri, templateName: tpl.name})
-            }>
+              setDraft({ ...draft, templatePath: tpl.vUri, templateName: tpl.name })
+            }
+            disabled={loading}
+          >
             <Text
               style={[
                 styles.chipText,
-                current.templatePath === tpl.vUri && styles.chipTextActive,
-              ]}>
+                {
+                  color: draft.templatePath === tpl.vUri ? '#ffffff' : labelColor,
+                },
+              ]}
+            >
               {tpl.name}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-        <Text style={styles.saveBtnText}>Save</Text>
+      {saveMessage && (
+        <Text style={[styles.message, { color: saveMessage.includes('Failed') ? '#ff6666' : '#66bb6a' }]}>
+          {saveMessage}
+        </Text>
+      )}
+
+      <TouchableOpacity
+        style={[styles.saveBtn, { backgroundColor: buttonBgColor, opacity: loading ? 0.6 : 1 }]}
+        onPress={handleSave}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#ffffff" />
+        ) : (
+          <Text style={styles.saveBtnText}>Save Settings</Text>
+        )}
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  center: {flex: 1, alignItems: 'center', justifyContent: 'center'},
-  container: {padding: 28, backgroundColor: '#fff', flexGrow: 1},
-  title: {fontSize: 24, fontWeight: '700', color: '#111', marginBottom: 28},
-  label: {fontSize: 13, fontWeight: '600', color: '#555', marginTop: 20, marginBottom: 8},
+  container: {
+    paddingHorizontal: 20,
+    flexGrow: 1,
+  },
+  header: {
+    marginBottom: 32,
+    alignItems: 'center',
+  },
+  backButton: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 24,
+    marginBottom: 10,
+  },
   input: {
     borderWidth: 1,
-    borderColor: '#d0d0d0',
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 16,
-    color: '#111',
-    backgroundColor: '#fafafa',
   },
-  chipRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 8},
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   chip: {
     paddingHorizontal: 16,
-    paddingVertical: 9,
+    paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#d0d0d0',
-    backgroundColor: '#f5f5f5',
   },
-  chipActive: {borderColor: '#222', backgroundColor: '#222'},
-  chipText: {fontSize: 14, color: '#555'},
-  chipTextActive: {color: '#fff'},
+  chipText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  message: {
+    marginTop: 20,
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   saveBtn: {
-    marginTop: 44,
-    backgroundColor: '#222',
+    marginTop: 40,
+    marginBottom: 40,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
+    minHeight: 50,
+    justifyContent: 'center',
   },
-  saveBtnText: {color: '#fff', fontSize: 16, fontWeight: '700'},
+  saveBtnText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
 });

@@ -10,32 +10,28 @@ import { PluginManager } from 'sn-plugin-lib';
 
 AppRegistry.registerComponent(appName, () => App);
 
+// Pending button ID pattern: store button press events to be consumed by App.tsx
+let pendingButtonId = null;
+
+export function checkPendingButton() {
+  const id = pendingButtonId;
+  pendingButtonId = null;
+  return id;
+}
+
 PluginManager.init();
 
+// Main toolbar button - opens the plugin UI
 PluginManager.registerButton(1, ['NOTE', 'DOC'], {
   id: 100,
-  name: JSON.stringify({ en: 'Side Button' }),
+  name: JSON.stringify({ en: 'Daily Notes' }),
   icon: Image.resolveAssetSource(
     require('./assets/icon.png'),
   ).uri,
   showType: 1,
 });
 
-PluginManager.registerButton(2, ['NOTE', 'DOC'], {
-  id: 200,
-  name: JSON.stringify({ en: 'Lasso Button' }),
-  icon: Image.resolveAssetSource(
-    require('./assets/icon.png'),
-  ).uri,
-  editDataTypes: [0, 1, 2, 3, 4],
-  showType: 1,
-});
-
-PluginManager.registerButton(3, ['DOC'], {
-  id: 300,
-  name: JSON.stringify({ en: 'Selection Button' }),
-  icon: Image.resolveAssetSource(
-    require('./assets/icon.png'),
-  ).uri,
-  showType: 1,
+// Optional: Register button listeners after App mounts
+PluginManager.registerButtonListener((event) => {
+  pendingButtonId = event.id;
 });
