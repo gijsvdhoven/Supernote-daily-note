@@ -3,6 +3,7 @@
   "pluginID": "",
   "name": "Daily Notes",
   "pluginName": "Daily Notes",
+  "versionName": "1.0.0",
   "pluginVersion": "1.0.0",
   "pluginDescription": "Create and navigate daily notes with handwriting-based todo carry-over",
   "author": "Gijs van den Hoven",
