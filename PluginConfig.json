@@ -1,11 +1,10 @@
 {
-  "pluginKey": "SupernoteDailyNote",
-  "pluginID": "",
   "name": "Daily Notes",
-  "pluginName": "Daily Notes",
+  "desc": "Create and navigate daily notes with handwriting-based todo carry-over",
+  "iconPath": "assets/icon.png",
   "versionName": "1.0.0",
-  "pluginVersion": "1.0.0",
-  "pluginDescription": "Create and navigate daily notes with handwriting-based todo carry-over",
-  "author": "Gijs van den Hoven",
-  "iconPath": "assets/icon.png"
+  "versionCode": "1",
+  "pluginID": "",
+  "pluginKey": "SupernoteDailyNote",
+  "jsMainPath": "index"
 }
