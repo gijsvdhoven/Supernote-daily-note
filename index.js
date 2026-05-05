@@ -14,7 +14,7 @@ PluginManager.init();
 
 PluginManager.registerButton(1, ['NOTE', 'DOC'], {
   id: 100,
-  name: 'Side Button',
+  name: JSON.stringify({ en: 'Side Button' }),
   icon: Image.resolveAssetSource(
     require('./assets/icon.png'),
   ).uri,
@@ -23,7 +23,7 @@ PluginManager.registerButton(1, ['NOTE', 'DOC'], {
 
 PluginManager.registerButton(2, ['NOTE', 'DOC'], {
   id: 200,
-  name: 'Lasso Button',
+  name: JSON.stringify({ en: 'Lasso Button' }),
   icon: Image.resolveAssetSource(
     require('./assets/icon.png'),
   ).uri,
@@ -31,9 +31,9 @@ PluginManager.registerButton(2, ['NOTE', 'DOC'], {
   showType: 1,
 });
 
-PluginManager.registerButton(3, ['NOTE', 'DOC'], {
+PluginManager.registerButton(3, ['DOC'], {
   id: 300,
-  name: 'Selection Button',
+  name: JSON.stringify({ en: 'Selection Button' }),
   icon: Image.resolveAssetSource(
     require('./assets/icon.png'),
   ).uri,
