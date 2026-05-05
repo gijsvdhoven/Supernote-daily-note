@@ -26,16 +26,20 @@ function App(): React.JSX.Element {
     PluginManager.closePluginView();
   };
 
+  const textColor = isDarkMode ? '#ffffff' : '#000000';
+  const closeTextStyle = [styles.closeText, { color: textColor }];
+  const helloTextStyle = [styles.helloText, { color: textColor }];
+
   return (
     <View style={styles.container}>
       <Pressable style={styles.closeButton} onPress={handleClose}>
-        <Text style={[styles.closeText, {color: isDarkMode ? '#ffffff' : '#000000'}]}>✕</Text>
+        <Text style={closeTextStyle}>✕</Text>
       </Pressable>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={isDarkMode ? '#000000' : '#ffffff'}
       />
-      <Text style={[styles.helloText, {color: isDarkMode ? '#ffffff' : '#000000'}]}>
+      <Text style={helloTextStyle}>
         Hello World
       </Text>
     </View>
