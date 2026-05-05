@@ -57,24 +57,11 @@ jobs:
             fs.writeFileSync('PluginConfig.json', JSON.stringify(cfg, null, 2) + '\n');
           "
 
-      - name: Bundle JS
-        run: |
-          mkdir -p build/bundle/assets
-          npx react-native bundle \
-            --platform android \
-            --dev false \
-            --entry-file index.js \
-            --bundle-output build/bundle/index.android.bundle \
-            --assets-dest build/bundle/assets
-
-      - name: Package .snplg
-        run: |
-          cp PluginConfig.json build/bundle/
-          mkdir -p build/outputs
-          cd build/bundle && zip -r ../../build/outputs/SupernoteDailyNote.snplg .
+      - name: Build plugin
+        run: chmod +x ./buildPlugin.sh && ./buildPlugin.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: build/outputs/SupernoteDailyNote.snplg
+          files: build/outputs/*.snplg
           generate_release_notes: true

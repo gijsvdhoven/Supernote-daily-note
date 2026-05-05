@@ -6,8 +6,8 @@ on:
   pull_request:
 
 jobs:
-  typecheck:
-    name: Type check
+  lint:
+    name: Lint and type check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,5 +19,52 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Lint
+        run: npm run lint
+
       - name: Type check
         run: npx tsc --noEmit
+
+  build:
+    name: Build plugin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create sn-plugin-lib shim
+        run: |
+          mkdir -p node_modules/sn-plugin-lib
+          cat > node_modules/sn-plugin-lib/index.js <<'JS'
+          const noop = () => {};
+          const asyncNull = () => Promise.resolve(null);
+          const proxy = () => new Proxy({}, { get: () => asyncNull });
+          module.exports = {
+            PluginManager: {
+              init: noop, registerButton: noop, registerButtonListener: noop,
+              registerConfigButton: noop, registerConfigButtonListener: noop,
+              showPluginView: noop, closePluginView: noop,
+            },
+            PluginCommAPI: proxy(),
+            PluginFileAPI: proxy(),
+            PluginNoteAPI: proxy(),
+            FileUtils: proxy(),
+          };
+          JS
+          printf '{"name":"sn-plugin-lib","version":"0.0.0","main":"index.js"}\n' \
+            > node_modules/sn-plugin-lib/package.json
+
+      - name: Build plugin
+        run: chmod +x ./buildPlugin.sh && ./buildPlugin.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin
+          path: build/outputs/*.snplg
